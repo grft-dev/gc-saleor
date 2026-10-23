@@ -1,0 +1,42 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: saleor-graft-postgres
+    ports:
+      - "5434:5432"
+    environment:
+      POSTGRES_USER: saleor
+      POSTGRES_PASSWORD: saleor-graft-demo
+      POSTGRES_DB: saleor_catalog
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U saleor -d saleor_catalog"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  db-seed:
+    image: postgres:16
+    container_name: saleor-graft-db-seed
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./graft/db/seed.sql:/seed.sql:ro
+    environment:
+      PGPASSWORD: saleor-graft-demo
+    entrypoint: ["psql", "-h", "postgres", "-U", "saleor", "-d", "saleor_catalog", "-v", "ON_ERROR_STOP=1", "-f", "/seed.sql"]
+    restart: "no"
+
+  saleor-grafthost:
+    image: saleor/grafthost:1.0
+    build:
+      context: ./graft
+      dockerfile: Dockerfile
+    depends_on:
+      db-seed:
+        condition: service_completed_successfully
+    ports:
+      - "8096:80"
+      - "8097:81"
+    environment:
+      SALEOR_CATALOG_DSN: postgresql://saleor:saleor-graft-demo@postgres:5432/saleor_catalog
