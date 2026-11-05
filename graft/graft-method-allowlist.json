@@ -1,0 +1,14 @@
+{
+  "modules": [
+    "./saleor-catalog"
+  ],
+  "types": [
+    {
+      "publicApiType": "product_catalog.ProductCatalog",
+      "methods": [
+        "get_products",
+        "get_product"
+      ]
+    }
+  ]
+}
